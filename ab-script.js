@@ -33,7 +33,7 @@ async function fetchWithRetry(url, options = {}, retries = 5, backoff = 500) {
     }
 }
 
-async function fetchSongs() {
+async function fetchVideos() {
     const query = document.getElementById("searchQuery").value;
     const resultsContainer = document.getElementById("results");
     const loadingDiv = document.getElementById("loading");
@@ -49,31 +49,29 @@ async function fetchSongs() {
     try {
         const apiUrl = `https://api.giftedtech.my.id/api/search/spotifysearch?apikey=_0x5aff35,_0x1876stqr&query=${encodeURIComponent(query)}`;
         const response = await fetchWithRetry(proxyUrl + encodeURIComponent(apiUrl), {}, -1);
-
         const data = await response.json();
 
-        if (!data || !data.results || data.results.length === 0) {
+        if (!data.success || !data.results.length) {
             resultsContainer.innerHTML = "<p>No results found.</p>";
             return;
         }
 
         data.results.forEach((song) => {
-            const songCard = document.createElement("li");
-            songCard.classList.add("song-card");
+            const videoCard = document.createElement("li");
+            videoCard.classList.add("video-card");
 
-            songCard.innerHTML = `
+            videoCard.innerHTML = `
                 <img src="${song.thumbnail}" alt="${song.title}">
-                <div class="song-info">
+                <div class="video-info">
                     <h3><a href="${song.url}" target="_blank">${song.title}</a></h3>
-                    <p>Artist: <a href="${song.artist_url}" target="_blank">${song.artist}</a></p>
-                    <p>Album: ${song.album}</p>
+                    <p>Artist: ${song.artist}</p>
                     <p>Duration: ${song.duration}</p>
                     <button class="download-button" onclick="fetchDownloadLinks(this, '${song.url}')">Download</button>
                     <div class="download-section" id="download-${song.url}" style="display: none;"></div>
                 </div>
             `;
 
-            resultsContainer.appendChild(songCard);
+            resultsContainer.appendChild(videoCard);
         });
     } catch (error) {
         resultsContainer.innerHTML = `<p>Failed to fetch results. Please try again later.</p>`;
@@ -98,18 +96,17 @@ async function fetchDownloadLinks(button, songUrl) {
     downloadSection.style.display = "block";
 
     try {
-        const downloadApiUrl = `https://api.giftedtech.my.id/api/download/spotifydl?apikey=_0x5aff35,_0x1876stqr&url=${encodeURIComponent(songUrl)}`;
-        const response = await fetchWithRetry(proxyUrl + encodeURIComponent(downloadApiUrl), {}, -1);
-
+        const apiUrl = `https://api.giftedtech.my.id/api/download/spotifydl?apikey=_0x5aff35,_0x1876stqr&url=${encodeURIComponent(songUrl)}`;
+        const response = await fetchWithRetry(proxyUrl + encodeURIComponent(apiUrl), {}, -1);
         const data = await response.json();
 
         if (data.success && data.result?.download_url) {
-            const songDownloadButton = document.createElement("a");
-            songDownloadButton.classList.add("download-button");
-            songDownloadButton.href = data.result.download_url;
-            songDownloadButton.target = "_blank";
-            songDownloadButton.innerText = `Download Song (${data.result.quality})`;
-            downloadSection.appendChild(songDownloadButton);
+            const audioDownloadButton = document.createElement("a");
+            audioDownloadButton.classList.add("download-button");
+            audioDownloadButton.href = data.result.download_url;
+            audioDownloadButton.target = "_blank";
+            audioDownloadButton.innerText = `Download Audio (${data.result.quality})`;
+            downloadSection.appendChild(audioDownloadButton);
         } else {
             downloadSection.innerHTML = "<p>No download link available.</p>";
         }
