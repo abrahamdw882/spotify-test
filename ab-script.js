@@ -33,6 +33,22 @@ async function fetchWithRetry(url, options = {}, retries = 5, backoff = 500) {
     }
 }
 
+async function fetchThumbnail(songUrl) {
+    const apiUrl = `https://api.giftedtech.my.id/api/download/spotifydl2?apikey=_0x5aff35,_0x1876stqr&url=${encodeURIComponent(songUrl)}`;
+    try {
+        const response = await fetchWithRetry(proxyUrl + encodeURIComponent(apiUrl), {}, -1);
+        const data = await response.json();
+        if (data.success && data.result && data.result.thumbnail) {
+            return data.result.thumbnail;
+        } else {
+            return 'https://via.placeholder.com/150';
+        }
+    } catch (error) {
+        console.error("Error fetching thumbnail:", error);
+        return 'https://via.placeholder.com/150';
+    }
+}
+
 async function fetchVideos() {
     const query = document.getElementById("searchQuery").value;
     const resultsContainer = document.getElementById("results");
@@ -56,12 +72,14 @@ async function fetchVideos() {
             return;
         }
 
-        data.results.forEach((song) => {
+        for (const song of data.results) {
+            const thumbnailUrl = await fetchThumbnail(song.url);
+
             const videoCard = document.createElement("li");
             videoCard.classList.add("video-card");
 
             videoCard.innerHTML = `
-                <img src="${song.url}" alt="${song.title}">
+                <img src="${thumbnailUrl}" alt="${song.title}">
                 <div class="video-info">
                     <h3><a href="${song.url}" target="_blank">${song.title}</a></h3>
                     <p>Artist: ${song.artist}</p>
@@ -72,7 +90,7 @@ async function fetchVideos() {
             `;
 
             resultsContainer.appendChild(videoCard);
-        });
+        }
     } catch (error) {
         resultsContainer.innerHTML = `<p>Failed to fetch results. Please try again later.</p>`;
         console.error(error);
