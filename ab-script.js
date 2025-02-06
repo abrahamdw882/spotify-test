@@ -61,7 +61,7 @@ async function fetchVideos() {
             videoCard.classList.add("video-card");
 
             videoCard.innerHTML = `
-                <img src="${song.thumbnail}" alt="${song.title}">
+                <img src="${song.url}" alt="${song.title}">
                 <div class="video-info">
                     <h3><a href="${song.url}" target="_blank">${song.title}</a></h3>
                     <p>Artist: ${song.artist}</p>
