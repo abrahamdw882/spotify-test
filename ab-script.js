@@ -28,22 +28,6 @@ async function fetchWithRetry(url, options = {}, retries = 5, backoff = 500) {
     }
 }
 
-async function fetchThumbnail(songUrl) {
-    const apiUrl = `https://api.giftedtech.my.id/api/download/spotifydl2?apikey=_0x5aff35,_0x1876stqr&url=${encodeURIComponent(songUrl)}`;
-    try {
-        const response = await fetchWithRetry(proxyUrl + encodeURIComponent(apiUrl), {}, -1);
-        const data = await response.json();
-        if (data.success && data.result && data.result.thumbnail) {
-            return data.result.thumbnail;
-        } else {
-            return 'https://via.placeholder.com/150';
-        }
-    } catch (error) {
-        console.error("Error fetching thumbnail:", error);
-        return 'https://via.placeholder.com/150';
-    }
-}
-
 async function fetchVideos() {
     const query = document.getElementById("searchQuery").value;
     const resultsContainer = document.getElementById("results");
@@ -63,12 +47,26 @@ async function fetchVideos() {
             resultsContainer.innerHTML = "<p>No results found.</p>";
             return;
         }
+  
         for (const song of data.results) {
-            const thumbnailUrl = await fetchThumbnail(song.url);
+            try {
+                const thumbnailApiUrl = `https://api.giftedtech.my.id/api/download/spotifydl2?apikey=_0x5aff35,_0x1876stqr&url=${encodeURIComponent(song.url)}`;
+                const thumbnailResponse = await fetchWithRetry(proxyUrl + encodeURIComponent(thumbnailApiUrl), {}, -1);
+                const thumbnailData = await thumbnailResponse.json();
+                if (thumbnailData.success && thumbnailData.result?.thumbnail) {
+                    song.thumbnail = thumbnailData.result.thumbnail;
+                }
+            } catch (error) {
+                console.error(`Failed to fetch thumbnail for ${song.title}:`, error);
+                song.thumbnail = "https://files.catbox.moe/nu3fxr.jpg"; 
+            }
+        }
+        
+        data.results.forEach((song) => {
             const videoCard = document.createElement("li");
             videoCard.classList.add("video-card");
             videoCard.innerHTML = `
-                <img src="${thumbnailUrl}" alt="${song.title}">
+                <img src="${song.thumbnail}" alt="${song.title}">
                 <div class="video-info">
                     <h3><a href="${song.url}" target="_blank">${song.title}</a></h3>
                     <p>Artist: ${song.artist}</p>
@@ -78,7 +76,7 @@ async function fetchVideos() {
                 </div>
             `;
             resultsContainer.appendChild(videoCard);
-        }
+        });
     } catch (error) {
         resultsContainer.innerHTML = `<p>Failed to fetch results. Please try again later.</p>`;
         console.error(error);
@@ -120,3 +118,4 @@ async function fetchDownloadLinks(button, songUrl) {
         button.innerText = originalText;
         button.disabled = false;
     }
+}
